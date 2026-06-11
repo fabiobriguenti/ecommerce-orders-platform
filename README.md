@@ -27,8 +27,7 @@ cd order-service
 ./mvnw clean verify        # unit + integration tests (Testcontainers, needs Docker)
 ```
 
-No Windows PowerShell use `.\mvnw.cmd` e garanta que `JAVA_HOME` aponta para o JDK 25
-(ex.: `E:\Program Files\Eclipse Adoptium\jdk-25.0.3.9-hotspot`).
+No Windows PowerShell use `.\mvnw.cmd` e garanta que `JAVA_HOME` aponta para o JDK 25.
 
 > **Nota (Docker Desktop no Windows):** os testes de integração usam **Testcontainers**.
 > O cliente docker-java embutido tem um problema de transporte via *named pipe* com o
@@ -45,16 +44,55 @@ docker compose up --build
 
 Sobe `postgres`, `wiremock` e `order-service`. A API fica em `http://localhost:8080`.
 
-## Endpoints (Fase 1 — walking skeleton)
+## API
 
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| `POST` | `/api/v1/orders` | Cria um pedido (`{ "customerId": "..." }`) → `201` |
-| `GET`  | `/api/v1/orders/{orderId}` | Retorna um pedido → `200`/`404` |
-| `GET`  | `/actuator/health` | Health check |
+Todos os endpoints de negócio ficam sob `/api/v1` (orders + payments) e seguem **RFC 7807** para
+erros. A documentação interativa (**OpenAPI 3.1**) está em **`/swagger-ui.html`**; o JSON em
+`/v3/api-docs`. Endpoints de mutação (`POST`/`DELETE`) aceitam o header **`Idempotency-Key`**.
 
-> O roadmap completo (estados, itens, pagamento, segurança, observabilidade, testes, CI) está em
-> implementação por fases.
+## Segurança e autenticação
+
+O serviço é um **OAuth2 Resource Server** (stateless): cada requisição precisa de um **Bearer JWT**
+assinado em RSA, validado pela chave pública em `order-service/src/main/resources/keys/public.pem`.
+A autorização é por **scope**:
+
+| Scope | Libera |
+|-------|--------|
+| `orders:read`     | `GET /api/v1/orders/**` |
+| `orders:write`    | `POST`/`DELETE /api/v1/orders/**` |
+| `payments:read`   | `GET /api/v1/payments/**` |
+| `payments:write`  | `POST /api/v1/payments/**` |
+
+Rotas públicas: health/metrics, OpenAPI/Swagger e o endpoint de token abaixo.
+
+### Obter um token (dev)
+
+> ⚠️ As chaves em `resources/keys/` são um par RSA **descartável, apenas para desenvolvimento/avaliação**
+> (o desafio permite auth mockada). O endpoint de emissão é desabilitável com
+> `DEV_TOKEN_ENABLED=false` e **não deve** ser usado em produção. Em produção, troque a chave pública
+> pela do seu IdP e remova a privada.
+
+Parâmetros são query params (sem body): `scope` (repetível), `subject`, `ttl` (segundos).
+
+```bash
+# Token com todos os scopes (default), TTL 1h:
+curl -s -X POST http://localhost:8080/api/v1/auth/token | jq -r .accessToken
+
+# Token com scopes específicos:
+curl -s -X POST 'http://localhost:8080/api/v1/auth/token?subject=qa&scope=orders:read&scope=orders:write'
+
+# Usar o token:
+TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/token | jq -r .accessToken)
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/v1/orders/<id>
+```
+
+No Swagger UI, clique em **Authorize** e cole o token.
+
+Outros controles (OWASP): validação de input (Bean Validation), **rate limiting** por IP
+(`app.rate-limit.*`, 120 req/min por padrão, resposta `429` RFC 7807) e **security headers**
+(CSP, `Referrer-Policy`, `X-Frame-Options: DENY`, HSTS).
+
+> O roadmap completo (observabilidade, testes, CI) segue em implementação por fases.
 
 ## Estrutura
 

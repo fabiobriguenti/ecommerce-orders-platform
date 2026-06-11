@@ -1,6 +1,13 @@
 spring:
   application:
     name: order-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # RSA public key used to validate Bearer JWTs (ADR-15). The matching private key signs
+          # tokens via the dev-only /api/v1/auth/token endpoint.
+          public-key-location: classpath:keys/public.pem
   r2dbc:
     url: ${SPRING_R2DBC_URL:r2dbc:postgresql://localhost:5432/orders}
     username: ${DB_USER:orders}
@@ -12,6 +19,18 @@ spring:
     password: ${DB_PASSWORD:orders}
     locations: classpath:db/migration
     baseline-on-migrate: true
+
+# Application security knobs (ADR-15).
+app:
+  security:
+    jwt:
+      issuer: ${JWT_ISSUER:order-service}
+    dev-token:
+      # Dev-only token minting endpoint. MUST be false in production.
+      enabled: ${DEV_TOKEN_ENABLED:true}
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    requests-per-minute: ${RATE_LIMIT_RPM:120}
 
 # Base URL of the WireMock-simulated external services.
 external:
