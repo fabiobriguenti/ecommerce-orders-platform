@@ -1,0 +1,26 @@
+# Build output
+target/
+build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Local tooling (bootstrapped Maven, etc.)
+.tooling/
+
+# Logs / env
+*.log
+.env
+
+# Internal working notes (not part of the deliverable)
+proposta.txt
+feedback.txt

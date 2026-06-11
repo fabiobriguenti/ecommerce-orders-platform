@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: order-service
+  r2dbc:
+    url: ${SPRING_R2DBC_URL:r2dbc:postgresql://localhost:5432/orders}
+    username: ${DB_USER:orders}
+    password: ${DB_PASSWORD:orders}
+  flyway:
+    # Flyway runs migrations over JDBC (ADR-06), separate from the reactive R2DBC runtime.
+    url: ${SPRING_FLYWAY_URL:jdbc:postgresql://localhost:5432/orders}
+    user: ${DB_USER:orders}
+    password: ${DB_PASSWORD:orders}
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+# Base URL of the WireMock-simulated external services (used from Phase 5 onwards).
+external:
+  base-url: ${EXTERNAL_BASEURL:http://localhost:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+server:
+  port: 8080

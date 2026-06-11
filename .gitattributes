@@ -1,0 +1,10 @@
+# Normalize line endings: LF in the repo, native on checkout where it matters.
+* text=auto eol=lf
+
+# Windows scripts must stay CRLF
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Shell scripts and the Maven wrapper must stay LF (executed in the Linux Docker build)
+mvnw text eol=lf
+*.sh text eol=lf
