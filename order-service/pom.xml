@@ -21,6 +21,7 @@
         <!-- ADR-01: Java 25 (Temurin 25 installed). Falls back to 21 bytecode target if needed. -->
         <java.version>25</java.version>
         <testcontainers.version>1.21.3</testcontainers.version>
+        <resilience4j.version>2.2.0</resilience4j.version>
     </properties>
 
     <dependencies>
@@ -65,6 +66,18 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
+        <!-- Resilience4j: circuit breaker + time limiter for the payment gateway (ADR-14) -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot3</artifactId>
+            <version>${resilience4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-reactor</artifactId>
+            <version>${resilience4j.version}</version>
         </dependency>
 
         <!-- Tests -->

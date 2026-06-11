@@ -1,0 +1,15 @@
+{
+  "priority": 5,
+  "request": {
+    "method": "POST",
+    "urlPath": "/payments"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "status": "APPROVED",
+      "reference": "gw-approved-001"
+    }
+  }
+}

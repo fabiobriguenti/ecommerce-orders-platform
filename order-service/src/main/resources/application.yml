@@ -13,9 +13,29 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
-# Base URL of the WireMock-simulated external services (used from Phase 5 onwards).
+# Base URL of the WireMock-simulated external services.
 external:
   base-url: ${EXTERNAL_BASEURL:http://localhost:8081}
+
+# Outbox poller (ADR-04): delivers domain events to the Notification service.
+outbox:
+  poll-interval-ms: ${OUTBOX_POLL_INTERVAL_MS:5000}
+  batch-size: 50
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      paymentGateway:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+  timelimiter:
+    instances:
+      paymentGateway:
+        timeout-duration: 3s
+        cancel-running-future: true
 
 management:
   endpoints:

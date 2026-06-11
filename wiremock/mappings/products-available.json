@@ -1,0 +1,16 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/products/prod-available"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "id": "prod-available",
+      "available": true,
+      "price": { "amount": 10.00, "currency": "BRL" }
+    }
+  }
+}
