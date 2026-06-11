@@ -13,46 +13,74 @@ em [`docs/architecture.md`](docs/architecture.md).
 
 ## Pré-requisitos
 
-- **JDK 25** (Temurin 25 recomendado) — para build/execução local.
-- **Docker + Docker Compose** — para subir Postgres, WireMock e (fases seguintes) a stack de
-  observabilidade, além dos testes de integração com Testcontainers.
+- **Docker + Docker Compose** — única dependência para subir e exercitar a aplicação completa.
+- **JDK 25** (Temurin 25) — apenas se for buildar/testar localmente fora do Docker (`JAVA_HOME`
+  apontando para ele). O Maven vem pelo wrapper, não precisa instalar.
 
 ## Como rodar
 
-### Build e testes (não requer Docker)
-
-```bash
-cd order-service
-./mvnw clean test          # unit + web-slice tests + JaCoCo (no Docker)
-./mvnw clean verify        # + integration tests (Testcontainers: DB + WireMock, needs Docker)
-./mvnw org.pitest:pitest-maven:mutationCoverage   # mutation testing (domain)
-```
-
-No Windows PowerShell use `.\mvnw.cmd` e garanta que `JAVA_HOME` aponta para o JDK 25.
-
-### Quality gates
-
-| Gate | Ferramenta | Mínimo | Onde |
-|------|------------|--------|------|
-| Cobertura de linha (domínio) | JaCoCo (`check`) | **80%** | fase `test` |
-| Mutation score (domínio) | Pitest | **75%** (MSI atual ~81%) | `mutationCoverage` |
-
-Camadas de teste: **unitários** de domínio/aplicação; **web-slice** (`@WebFluxTest`) cobrindo
-controllers, autorização por scope e RFC 7807 sem Docker; **integração** (`*IT`) contra Postgres e
-WireMock reais via **Testcontainers**, reutilizando os mesmos `wiremock/mappings/`. Relatórios:
-`target/site/jacoco/index.html` e `target/pit-reports/index.html`.
-
-> Os `*IT` precisam de Docker. No Docker Desktop do Windows o Testcontainers pode não achar o
-> ambiente (transporte *named pipe*); rode `./mvnw test` localmente — os `*IT` rodam no CI (Linux).
-
-### Subir tudo com Docker Compose
+### 1. Subir tudo com Docker Compose (recomendado — autocontido)
 
 ```bash
 docker compose up --build
 ```
 
-Sobe `postgres`, `wiremock`, `order-service` e a stack de observabilidade
-(`jaeger`, `prometheus`, `grafana`). A API fica em `http://localhost:8080`.
+Sobe `order-service` + `postgres` + `wiremock` + observabilidade (`jaeger`, `prometheus`, `grafana`).
+Só precisa de Docker — nada mais.
+
+| Ponto de entrada | URL |
+|------------------|-----|
+| API | http://localhost:8080/api/v1 |
+| Swagger UI | http://localhost:8080/swagger-ui.html |
+| Health | http://localhost:8080/actuator/health |
+
+**Teste rápido** (fluxo mínimo ponta a ponta; `cust-active` e `prod-available` já existem nos
+mappings do WireMock):
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/token | jq -r .accessToken)
+
+OID=$(curl -s -X POST http://localhost:8080/api/v1/orders \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"customerId":"cust-active"}' | jq -r .id)
+
+curl -s -X POST "http://localhost:8080/api/v1/orders/$OID/items" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"productId":"prod-available","quantity":2}'
+
+curl -s -X POST "http://localhost:8080/api/v1/orders/$OID/confirm" -H "Authorization: Bearer $TOKEN"
+```
+
+Sem `curl`/`jq`? Faça o mesmo fluxo pelo **Swagger UI** (botão *Authorize* com o token).
+
+### 2. Build e testes locais (sem Docker)
+
+```bash
+cd order-service
+./mvnw test                                       # unitários + web-slice + gate de cobertura JaCoCo
+./mvnw org.pitest:pitest-maven:mutationCoverage   # mutation testing (domínio)
+```
+
+No Windows PowerShell use `.\mvnw.cmd` e garanta `JAVA_HOME` no JDK 25. Relatórios em
+`target/site/jacoco/index.html` e `target/pit-reports/index.html`. **Estes comandos não precisam de
+Docker e rodam de forma autocontida.**
+
+| Gate de qualidade | Ferramenta | Mínimo | Comando |
+|-------------------|------------|--------|---------|
+| Cobertura de linha (domínio) | JaCoCo (`check`) | **80%** | `./mvnw test` |
+| Mutation score (domínio) | Pitest | **75%** (MSI atual ~81%) | `mutationCoverage` |
+
+### Testes de integração (`*IT`) — rodam no CI
+
+Os `*IT` exercitam os adaptadores contra **Postgres real e WireMock real** via **Testcontainers**,
+reutilizando os mesmos `wiremock/mappings/`. O lar deles é o **pipeline de CI (Linux)**, onde
+`./mvnw verify` executa a suíte completa (veja [CI/CD](#cicd)).
+
+> Não estão no fluxo local padrão de propósito: o Testcontainers precisa de um daemon Docker que o
+> seu cliente consiga acessar, e alguns Docker Desktop no Windows expõem a API por *named pipe* de um
+> jeito que o cliente (docker-java) não negocia (`/info` → HTTP 400), fazendo a detecção do ambiente
+> falhar. Em Docker compatível (CI Linux, WSL2, Colima/Rancher Desktop, ou daemon TCP), `./mvnw verify`
+> roda tudo, incluindo os `*IT`, sem nenhuma alteração no projeto.
 
 ## API
 
