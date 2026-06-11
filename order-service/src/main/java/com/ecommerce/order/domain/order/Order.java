@@ -28,24 +28,27 @@ public class Order {
     private OrderStatus status;
     private final List<OrderItem> items;
     private Money total;
+    private Long version;
 
-    private Order(UUID id, CustomerId customerId, OrderStatus status, List<OrderItem> items, Money total) {
+    private Order(UUID id, CustomerId customerId, OrderStatus status, List<OrderItem> items,
+                  Money total, Long version) {
         this.id = id;
         this.customerId = customerId;
         this.status = status;
         this.items = items;
         this.total = total;
+        this.version = version;
     }
 
     /** Creates a brand-new empty order in {@link OrderStatus#CREATED}. */
     public static Order create(UUID id, CustomerId customerId) {
-        return new Order(id, customerId, OrderStatus.CREATED, new ArrayList<>(), null);
+        return new Order(id, customerId, OrderStatus.CREATED, new ArrayList<>(), null, null);
     }
 
     /** Rebuilds an order from persistence without re-running creation rules. */
     public static Order reconstitute(UUID id, CustomerId customerId, OrderStatus status,
-                                     List<OrderItem> items, Money total) {
-        return new Order(id, customerId, status, new ArrayList<>(items), total);
+                                     List<OrderItem> items, Money total, Long version) {
+        return new Order(id, customerId, status, new ArrayList<>(items), total, version);
     }
 
     /**
@@ -168,5 +171,15 @@ public class Order {
 
     public Optional<Money> total() {
         return Optional.ofNullable(total);
+    }
+
+    /** Optimistic-locking version (ADR-05). {@code null} for a not-yet-persisted order. */
+    public Long version() {
+        return version;
+    }
+
+    /** Set by the persistence adapter after a successful save so subsequent saves use the new version. */
+    public void assignVersion(Long version) {
+        this.version = version;
     }
 }

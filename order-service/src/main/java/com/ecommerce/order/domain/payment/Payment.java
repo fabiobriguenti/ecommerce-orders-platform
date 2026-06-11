@@ -23,23 +23,26 @@ public class Payment {
     private final Money amount;
     private PaymentStatus status;
     private int attempts;
+    private Long version;
 
-    private Payment(UUID id, UUID orderId, Money amount, PaymentStatus status, int attempts) {
+    private Payment(UUID id, UUID orderId, Money amount, PaymentStatus status, int attempts, Long version) {
         this.id = id;
         this.orderId = orderId;
         this.amount = amount;
         this.status = status;
         this.attempts = attempts;
+        this.version = version;
     }
 
     /** Starts a payment for a confirmed order: first attempt, in PROCESSING. */
     public static Payment initiate(UUID id, UUID orderId, Money amount) {
-        return new Payment(id, orderId, amount, PaymentStatus.PROCESSING, 1);
+        return new Payment(id, orderId, amount, PaymentStatus.PROCESSING, 1, null);
     }
 
     /** Rebuilds a payment from persistence. */
-    public static Payment reconstitute(UUID id, UUID orderId, Money amount, PaymentStatus status, int attempts) {
-        return new Payment(id, orderId, amount, status, attempts);
+    public static Payment reconstitute(UUID id, UUID orderId, Money amount, PaymentStatus status,
+                                       int attempts, Long version) {
+        return new Payment(id, orderId, amount, status, attempts, version);
     }
 
     /** Approves the current attempt. Idempotent: approving an approved payment is a no-op. */
@@ -102,5 +105,15 @@ public class Payment {
 
     public int attempts() {
         return attempts;
+    }
+
+    /** Optimistic-locking version (ADR-05). {@code null} for a not-yet-persisted payment. */
+    public Long version() {
+        return version;
+    }
+
+    /** Set by the persistence adapter after a successful save. */
+    public void assignVersion(Long version) {
+        this.version = version;
     }
 }

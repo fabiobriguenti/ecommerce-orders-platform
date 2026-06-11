@@ -20,7 +20,7 @@
     <properties>
         <!-- ADR-01: Java 25 (Temurin 25 installed). Falls back to 21 bytecode target if needed. -->
         <java.version>25</java.version>
-        <testcontainers.version>1.20.4</testcontainers.version>
+        <testcontainers.version>1.21.3</testcontainers.version>
     </properties>
 
     <dependencies>
@@ -113,6 +113,20 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <!-- Integration tests (*IT) run in the verify phase via Failsafe; they need Docker
+                 (Testcontainers). Unit tests (*Test) stay in the fast Surefire test phase. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

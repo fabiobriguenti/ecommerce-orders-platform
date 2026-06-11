@@ -23,12 +23,19 @@ consumidos por HTTP real. Veja o desafio em [`desafio.md`](desafio.md) e as deci
 
 ```bash
 cd order-service
-./mvnw clean verify        # Linux/macOS
-.\mvnw.cmd clean verify    # Windows PowerShell
+./mvnw clean test          # unit tests (no Docker)
+./mvnw clean verify        # unit + integration tests (Testcontainers, needs Docker)
 ```
 
-> No Windows, garanta que `JAVA_HOME` aponta para o JDK 25
-> (ex.: `E:\Program Files\Eclipse Adoptium\jdk-25.0.3.9-hotspot`).
+No Windows PowerShell use `.\mvnw.cmd` e garanta que `JAVA_HOME` aponta para o JDK 25
+(ex.: `E:\Program Files\Eclipse Adoptium\jdk-25.0.3.9-hotspot`).
+
+> **Nota (Docker Desktop no Windows):** os testes de integração usam **Testcontainers**.
+> O cliente docker-java embutido tem um problema de transporte via *named pipe* com o
+> Docker Desktop 29, que faz o `/info` retornar HTTP 400 e o Testcontainers não encontrar o
+> ambiente Docker. Em **CI Linux** (socket Unix) e em ambientes com o endpoint **TCP** do Docker
+> exposto, os `*IT` rodam normalmente. Localmente no Windows, rode `./mvnw test` (unitários) — os
+> `*IT` são executados no pipeline.
 
 ### Subir tudo com Docker Compose
 

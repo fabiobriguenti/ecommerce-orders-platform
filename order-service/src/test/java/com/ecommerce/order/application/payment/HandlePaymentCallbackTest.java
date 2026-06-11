@@ -55,7 +55,7 @@ class HandlePaymentCallbackTest {
     void approvalMarksOrderPaid() {
         Order order = awaitingPaymentOrder();
         Payment payment = Payment.reconstitute(paymentId, orderId, Money.of("10.00", "BRL"),
-                PaymentStatus.PROCESSING, 1);
+                PaymentStatus.PROCESSING, 1, null);
         when(paymentRepository.findById(paymentId)).thenReturn(Mono.just(payment));
         when(orderRepository.findById(orderId)).thenReturn(Mono.just(order));
         stubCommonSaves();
@@ -71,7 +71,7 @@ class HandlePaymentCallbackTest {
     void rejectionBelowLimitKeepsOrderRetryable() {
         Order order = awaitingPaymentOrder();
         Payment payment = Payment.reconstitute(paymentId, orderId, Money.of("10.00", "BRL"),
-                PaymentStatus.PROCESSING, 1);
+                PaymentStatus.PROCESSING, 1, null);
         when(paymentRepository.findById(paymentId)).thenReturn(Mono.just(payment));
         when(orderRepository.findById(orderId)).thenReturn(Mono.just(order));
         stubCommonSaves();
@@ -87,7 +87,7 @@ class HandlePaymentCallbackTest {
     void thirdRejectionCancelsOrderAutomatically() {
         Order order = awaitingPaymentOrder();
         Payment payment = Payment.reconstitute(paymentId, orderId, Money.of("10.00", "BRL"),
-                PaymentStatus.PROCESSING, 3);
+                PaymentStatus.PROCESSING, 3, null);
         when(paymentRepository.findById(paymentId)).thenReturn(Mono.just(payment));
         when(orderRepository.findById(orderId)).thenReturn(Mono.just(order));
         stubCommonSaves();
@@ -104,7 +104,7 @@ class HandlePaymentCallbackTest {
         Order order = awaitingPaymentOrder();
         order.markPaid();
         Payment payment = Payment.reconstitute(paymentId, orderId, Money.of("10.00", "BRL"),
-                PaymentStatus.APPROVED, 1);
+                PaymentStatus.APPROVED, 1, null);
         when(paymentRepository.findById(paymentId)).thenReturn(Mono.just(payment));
         when(orderRepository.findById(orderId)).thenReturn(Mono.just(order));
 

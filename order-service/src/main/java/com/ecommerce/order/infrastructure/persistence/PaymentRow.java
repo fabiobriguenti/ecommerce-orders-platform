@@ -10,29 +10,22 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.InsertOnlyProperty;
 import org.springframework.data.relational.core.mapping.Table;
 
-/**
- * Phase 1 walking skeleton row mapping for the {@code orders} table.
- *
- * <p>A null {@link #version} marks the entity as new, so Spring Data R2DBC issues an INSERT;
- * a non-null version triggers an optimistic-locking UPDATE (ADR-05). The rich domain aggregate
- * and its mapper replace this minimal row in Phase 2/4.
- */
-@Table("orders")
-public class OrderRow {
+@Table("payments")
+public class PaymentRow {
 
     @Id
     private UUID id;
 
-    @Column("customer_id")
-    private String customerId;
+    @Column("order_id")
+    private UUID orderId;
+
+    private BigDecimal amount;
+
+    private String currency;
 
     private String status;
 
-    @Column("total_amount")
-    private BigDecimal totalAmount;
-
-    @Column("total_currency")
-    private String totalCurrency;
+    private Integer attempts;
 
     @Version
     private Long version;
@@ -52,12 +45,28 @@ public class OrderRow {
         this.id = id;
     }
 
-    public String getCustomerId() {
-        return customerId;
+    public UUID getOrderId() {
+        return orderId;
     }
 
-    public void setCustomerId(String customerId) {
-        this.customerId = customerId;
+    public void setOrderId(UUID orderId) {
+        this.orderId = orderId;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
     }
 
     public String getStatus() {
@@ -68,20 +77,12 @@ public class OrderRow {
         this.status = status;
     }
 
-    public BigDecimal getTotalAmount() {
-        return totalAmount;
+    public Integer getAttempts() {
+        return attempts;
     }
 
-    public void setTotalAmount(BigDecimal totalAmount) {
-        this.totalAmount = totalAmount;
-    }
-
-    public String getTotalCurrency() {
-        return totalCurrency;
-    }
-
-    public void setTotalCurrency(String totalCurrency) {
-        this.totalCurrency = totalCurrency;
+    public void setAttempts(Integer attempts) {
+        this.attempts = attempts;
     }
 
     public Long getVersion() {
