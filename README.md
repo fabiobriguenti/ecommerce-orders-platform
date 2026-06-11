@@ -23,14 +23,27 @@ consumidos por HTTP real. Veja o desafio em [`desafio.md`](desafio.md) e as deci
 
 ```bash
 cd order-service
-./mvnw clean test          # unit tests (no Docker)
-./mvnw clean verify        # unit + integration tests (Testcontainers, needs Docker)
+./mvnw clean test          # unit + web-slice tests + JaCoCo (no Docker)
+./mvnw clean verify        # + integration tests (Testcontainers: DB + WireMock, needs Docker)
+./mvnw org.pitest:pitest-maven:mutationCoverage   # mutation testing (domain)
 ```
 
 No Windows PowerShell use `.\mvnw.cmd` e garanta que `JAVA_HOME` aponta para o JDK 25.
 
-> **Nota (Docker Desktop no Windows):** os testes de integração usam **Testcontainers**.
-> Localmente no Windows, rode `./mvnw test` (unitários) — os `*IT` são executados no pipeline.
+### Quality gates
+
+| Gate | Ferramenta | Mínimo | Onde |
+|------|------------|--------|------|
+| Cobertura de linha (domínio) | JaCoCo (`check`) | **80%** | fase `test` |
+| Mutation score (domínio) | Pitest | **75%** (MSI atual ~81%) | `mutationCoverage` |
+
+Camadas de teste: **unitários** de domínio/aplicação; **web-slice** (`@WebFluxTest`) cobrindo
+controllers, autorização por scope e RFC 7807 sem Docker; **integração** (`*IT`) contra Postgres e
+WireMock reais via **Testcontainers**, reutilizando os mesmos `wiremock/mappings/`. Relatórios:
+`target/site/jacoco/index.html` e `target/pit-reports/index.html`.
+
+> Os `*IT` precisam de Docker. No Docker Desktop do Windows o Testcontainers pode não achar o
+> ambiente (transporte *named pipe*); rode `./mvnw test` localmente — os `*IT` rodam no CI (Linux).
 
 ### Subir tudo com Docker Compose
 
