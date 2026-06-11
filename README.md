@@ -30,11 +30,7 @@ cd order-service
 No Windows PowerShell use `.\mvnw.cmd` e garanta que `JAVA_HOME` aponta para o JDK 25.
 
 > **Nota (Docker Desktop no Windows):** os testes de integração usam **Testcontainers**.
-> O cliente docker-java embutido tem um problema de transporte via *named pipe* com o
-> Docker Desktop 29, que faz o `/info` retornar HTTP 400 e o Testcontainers não encontrar o
-> ambiente Docker. Em **CI Linux** (socket Unix) e em ambientes com o endpoint **TCP** do Docker
-> exposto, os `*IT` rodam normalmente. Localmente no Windows, rode `./mvnw test` (unitários) — os
-> `*IT` são executados no pipeline.
+> Localmente no Windows, rode `./mvnw test` (unitários) — os `*IT` são executados no pipeline.
 
 ### Subir tudo com Docker Compose
 
@@ -42,7 +38,8 @@ No Windows PowerShell use `.\mvnw.cmd` e garanta que `JAVA_HOME` aponta para o J
 docker compose up --build
 ```
 
-Sobe `postgres`, `wiremock` e `order-service`. A API fica em `http://localhost:8080`.
+Sobe `postgres`, `wiremock`, `order-service` e a stack de observabilidade
+(`jaeger`, `prometheus`, `grafana`). A API fica em `http://localhost:8080`.
 
 ## API
 
@@ -92,7 +89,26 @@ Outros controles (OWASP): validação de input (Bean Validation), **rate limitin
 (`app.rate-limit.*`, 120 req/min por padrão, resposta `429` RFC 7807) e **security headers**
 (CSP, `Referrer-Policy`, `X-Frame-Options: DENY`, HSTS).
 
-> O roadmap completo (observabilidade, testes, CI) segue em implementação por fases.
+## Observabilidade
+
+- **Logs**: JSON estruturado (ECS) no console. Cada requisição gera uma linha de *access log*
+  com `correlationId` (header `X-Correlation-Id` recebido ou UUID gerado, ecoado na resposta) e,
+  quando dentro do escopo do trace, `traceId`/`spanId`.
+- **Métricas**: Micrometer → **Prometheus** em `/actuator/prometheus` (`http_server_requests`,
+  JVM, etc.).
+- **Tracing**: **OpenTelemetry** (Micrometer Tracing + OTLP) exportado ao **Jaeger**; o `traceId`
+  é o id de correlação propagado entre serviços via `traceparent` (W3C), inclusive nas chamadas
+  HTTP ao WireMock.
+
+| UI | URL |
+|----|-----|
+| Jaeger (traces)     | http://localhost:16686 |
+| Prometheus (métricas) | http://localhost:9090 |
+| Grafana             | http://localhost:3000 (login anônimo; datasources Prometheus + Jaeger provisionados) |
+
+Sampling de trace: `TRACING_SAMPLING` (1.0 por padrão). Endpoint OTLP: `MANAGEMENT_OTLP_TRACING_ENDPOINT`.
+
+> O roadmap restante (testes, CI) segue em implementação por fases.
 
 ## Estrutura
 

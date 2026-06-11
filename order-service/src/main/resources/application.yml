@@ -64,6 +64,24 @@ management:
   endpoint:
     health:
       show-details: always
+  # Observability (ADR-16). The trace/span ids double as the propagated correlation id and are
+  # emitted on every structured log line; CorrelationIdFilter also echoes X-Correlation-Id.
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING:1.0}
+  otlp:
+    tracing:
+      endpoint: ${MANAGEMENT_OTLP_TRACING_ENDPOINT:http://localhost:4318/v1/traces}
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
+# Structured JSON logs (ECS) carrying traceId/spanId from Micrometer tracing.
+logging:
+  structured:
+    format:
+      console: ${LOG_FORMAT:ecs}
 
 # OpenAPI 3.1 spec + Swagger UI (Phase 6 API requirement).
 springdoc:

@@ -1,0 +1,15 @@
+apiVersion: 1
+
+# Datasources only — no custom dashboards (kept intentionally lean). Prometheus is the default;
+# Jaeger is wired so traces can be explored from Grafana's Explore view.
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
