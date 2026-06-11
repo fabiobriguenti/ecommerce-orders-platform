@@ -46,5 +46,13 @@ management:
     health:
       show-details: always
 
+# OpenAPI 3.1 spec + Swagger UI (Phase 6 API requirement).
+springdoc:
+  api-docs:
+    version: openapi_3_1
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
 server:
   port: 8080
