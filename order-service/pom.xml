@@ -20,6 +20,9 @@
     <properties>
         <!-- ADR-01: Java 25 (Temurin 25 installed). Falls back to 21 bytecode target if needed. -->
         <java.version>25</java.version>
+        <!-- Security patch over Spring Boot 3.5.3's managed 6.5.1: fixes CVE-2026-22732
+             (CRITICAL: security-policy bypass / information disclosure). Flagged by the CI Trivy gate. -->
+        <spring-security.version>6.5.9</spring-security.version>
         <testcontainers.version>1.21.3</testcontainers.version>
         <resilience4j.version>2.2.0</resilience4j.version>
         <springdoc.version>2.8.8</springdoc.version>

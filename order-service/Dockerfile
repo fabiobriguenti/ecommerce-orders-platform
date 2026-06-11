@@ -4,7 +4,8 @@ FROM eclipse-temurin:25-jdk AS build
 WORKDIR /app
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
-RUN ./mvnw -B -q dependency:go-offline
+# Ensure the wrapper is executable regardless of the source filesystem (e.g. Windows checkouts).
+RUN chmod +x mvnw && ./mvnw -B -q dependency:go-offline
 COPY src/ src/
 RUN ./mvnw -B -q clean package -DskipTests
 

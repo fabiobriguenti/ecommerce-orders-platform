@@ -121,13 +121,27 @@ Outros controles (OWASP): validação de input (Bean Validation), **rate limitin
 
 Sampling de trace: `TRACING_SAMPLING` (1.0 por padrão). Endpoint OTLP: `MANAGEMENT_OTLP_TRACING_ENDPOINT`.
 
-> O roadmap restante (testes, CI) segue em implementação por fases.
+## CI/CD
+
+GitHub Actions (`.github/workflows/ci.yml`) em cada push/PR para `main`:
+
+1. **build-test** — `mvnw verify` (compila → testes unitários + **gate JaCoCo** de cobertura do
+   domínio → testes de integração com Testcontainers) e **Pitest** (mutation, gate MSI). Relatórios
+   publicados como artefato.
+2. **security-scan** — build da imagem Docker e **scan de vulnerabilidades com Trivy**: findings
+   HIGH/CRITICAL vão para a aba *Security* (SARIF) e o build **falha em CRITICAL** *fixable*
+   (`ignore-unfixed`).
+
+> O gate Trivy já pegou um caso real: `CVE-2026-22732` (CRITICAL) em `spring-security-web` 6.5.1 —
+> corrigido fixando a versão do Spring Security em 6.5.9 no `pom.xml`.
 
 ## Estrutura
 
 ```
-order-service/      # serviço (Clean Architecture: domain / application / infrastructure)
-wiremock/mappings/  # stubs dos serviços externos (a partir da Fase 5)
-docker-compose.yml  # orquestração local
-docs/               # architecture.md (decisões de design)
+order-service/            # serviço (Clean Architecture: domain / application / infrastructure)
+wiremock/mappings/        # stubs dos serviços externos (a partir da Fase 5)
+observability/            # prometheus.yml + provisioning do Grafana
+docker-compose.yml        # orquestração local (app + DB + WireMock + observabilidade)
+.github/workflows/ci.yml  # pipeline: build/test/cobertura/mutation + scan Trivy
+docs/                     # architecture.md (decisões de design)
 ```
