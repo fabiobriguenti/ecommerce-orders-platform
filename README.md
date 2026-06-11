@@ -3,7 +3,7 @@
 Backend de pedidos de e-commerce. Apenas o **`order-service`** é implementado; os demais serviços
 (Customer, Catalog, Payment Gateway, Notification) são simulados por **WireMock** standalone e
 consumidos por HTTP real. Veja o desafio em [`desafio.md`](desafio.md) e as decisões de arquitetura
-(em construção) em `docs/architecture.md`.
+em [`docs/architecture.md`](docs/architecture.md).
 
 ## Stack
 
