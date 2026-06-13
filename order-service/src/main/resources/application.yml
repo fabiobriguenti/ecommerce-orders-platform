@@ -12,6 +12,13 @@ spring:
     url: ${SPRING_R2DBC_URL:r2dbc:postgresql://localhost:5432/orders}
     username: ${DB_USER:orders}
     password: ${DB_PASSWORD:orders}
+    # Connection pool to Postgres (r2dbc-pool). Sized for the reactive workload; keep modest — a pool
+    # larger than the real concurrency (or than Postgres max_connections) hurts via contention.
+    pool:
+      initial-size: ${DB_POOL_INITIAL:10}
+      max-size: ${DB_POOL_MAX:30}
+      max-acquire-time: 5s
+      max-idle-time: 30m
   flyway:
     # Flyway runs migrations over JDBC (ADR-06), separate from the reactive R2DBC runtime.
     url: ${SPRING_FLYWAY_URL:jdbc:postgresql://localhost:5432/orders}
@@ -35,6 +42,15 @@ app:
 # Base URL of the WireMock-simulated external services.
 external:
   base-url: ${EXTERNAL_BASEURL:http://localhost:8081}
+  # Reactor Netty outbound connection pool shared by the external HTTP clients (Customer, Catalog,
+  # Payment, Notification). Defaults override Reactor Netty's own (maxConnections = max(cores, 16)).
+  pool:
+    max-connections: ${EXTERNAL_POOL_MAX_CONN:200}
+    pending-acquire-max-count: ${EXTERNAL_POOL_PENDING_MAX:1000}
+    pending-acquire-timeout-ms: 5000
+    max-idle-time-ms: 30000
+    max-life-time-ms: 300000
+    connect-timeout-ms: 2000
 
 # Outbox poller (ADR-04): delivers domain events to the Notification service.
 outbox:
