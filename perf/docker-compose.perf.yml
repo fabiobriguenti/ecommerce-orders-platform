@@ -1,0 +1,12 @@
+# Overlay used ONLY for performance testing. Disables the per-IP rate limiter so a load test measures
+# the application's real throughput instead of the 120 req/min guard (which would return 429 RFC 7807).
+# Compose merges this on top of docker-compose.yml:
+#   docker compose -f docker-compose.yml -f perf/docker-compose.perf.yml up -d --build
+services:
+  order-service:
+    environment:
+      RATE_LIMIT_ENABLED: "false"
+      # Pool knobs exposed so a perf run can A/B them without rebuilding (host env overrides; the
+      # committed app defaults are 30 / 200). E.g.:  DB_POOL_MAX=10 docker compose ... up -d order-service
+      DB_POOL_MAX: "${DB_POOL_MAX:-30}"
+      EXTERNAL_POOL_MAX_CONN: "${EXTERNAL_POOL_MAX_CONN:-200}"
