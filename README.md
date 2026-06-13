@@ -14,12 +14,12 @@ em [`docs/architecture.md`](docs/architecture.md).
 ## Pré-requisitos
 
 - **Docker + Docker Compose** — única dependência para subir e exercitar a aplicação completa.
-- **JDK 25** (Temurin 25) — apenas se for buildar/testar localmente fora do Docker (`JAVA_HOME`
+- **JDK 25** — apenas se for buildar/testar localmente fora do Docker (`JAVA_HOME`
   apontando para ele). O Maven vem pelo wrapper, não precisa instalar.
 
 ## Como rodar
 
-### 1. Subir tudo com Docker Compose (recomendado — autocontido)
+### 1. Subir tudo com Docker Compose (autocontido)
 
 ```bash
 docker compose up --build
@@ -91,8 +91,7 @@ têm `withReuse(true)`: habilite o reuso entre execuções com
 em CI, onde o arquivo não existe).
 
 Para rodar tudo localmente basta **Docker instalado** e `cd order-service && ./mvnw verify` — o mesmo
-comando do CI. O Testcontainers 2.x (com docker-java 3.7) negocia a API de engines atuais (MinAPI ≥
-1.40, ex.: Docker 29), então não há passo extra dependente de ambiente.
+comando do CI.
 
 ## API
 
@@ -157,9 +156,26 @@ Outros controles (OWASP): validação de input (Bean Validation), **rate limitin
 |----|-----|
 | Jaeger (traces)     | http://localhost:16686 |
 | Prometheus (métricas) | http://localhost:9090 |
-| Grafana             | http://localhost:3000 (login anônimo; datasources Prometheus + Jaeger provisionados) |
+| Grafana             | http://localhost:3000 (login anônimo; datasources + dashboards provisionados) |
 
 Sampling de trace: `TRACING_SAMPLING` (1.0 por padrão). Endpoint OTLP: `MANAGEMENT_OTLP_TRACING_ENDPOINT`.
+
+### Dashboards (as code)
+
+Datasources **e** dashboards são **provisionados a partir do repositório** — quem clonar e der
+`docker compose up` já encontra tudo pronto em **Grafana → pasta _Order Service_** (sem importar nada):
+
+```
+observability/grafana/
+├── provisioning/datasources/datasources.yml   # Prometheus (uid: prometheus) + Jaeger (uid: jaeger)
+├── provisioning/dashboards/dashboards.yml      # provider: carrega os *.json abaixo no startup
+└── dashboards/order-service.json               # dashboard versionado (HTTP, latência p95, 5xx, JVM, circuit breaker)
+```
+
+Para **criar/editar**: monte na UI do Grafana (Admin anônimo já habilitado), depois
+**Dashboard settings → JSON Model**, copie e salve como um `*.json` em `observability/grafana/dashboards/`.
+Referencie o datasource pelo **uid** (`prometheus`) para o JSON ser portável em qualquer clone. Como
+`allowUiUpdates: true`, dá para iterar na UI; só exporte o JSON para versionar a mudança.
 
 ## CI/CD
 

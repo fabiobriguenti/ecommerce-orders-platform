@@ -1,0 +1,16 @@
+apiVersion: 1
+
+# Dashboards as code: Grafana loads every *.json under options.path on startup (and re-scans every
+# updateIntervalSeconds), so anyone who clones the repo and runs `docker compose up` gets them. The
+# JSON files live in ./observability/grafana/dashboards (mounted at /var/lib/grafana/dashboards).
+providers:
+  - name: order-service
+    orgId: 1
+    folder: Order Service
+    type: file
+    disableDeletion: false
+    allowUiUpdates: true        # edits in the UI are allowed; export the JSON Model to persist them
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false
