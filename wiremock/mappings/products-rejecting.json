@@ -1,0 +1,16 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/products/prod-rejecting"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "id": "prod-rejecting",
+      "available": true,
+      "price": { "amount": 77.77, "currency": "BRL" }
+    }
+  }
+}

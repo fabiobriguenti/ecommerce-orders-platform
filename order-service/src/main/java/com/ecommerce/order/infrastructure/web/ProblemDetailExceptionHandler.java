@@ -4,6 +4,8 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.validation.FieldError;
@@ -55,6 +57,18 @@ public class ProblemDetailExceptionHandler {
             MaxPaymentAttemptsReachedException.class})
     public ProblemDetail handleConflict(RuntimeException ex) {
         return problem(HttpStatus.CONFLICT, "Conflicting state", ex.getMessage(), "conflict");
+    }
+
+    // ---- 409 Conflict (concurrency: optimistic lock / DB uniqueness under a race) ---------------
+
+    @ExceptionHandler({OptimisticLockingFailureException.class, DataIntegrityViolationException.class})
+    public ProblemDetail handleConcurrentModification(Exception ex) {
+        // Two concurrent requests touched the same order (optimistic-lock version clash, ADR-05) or
+        // raced on a unique constraint (e.g. one-active-order-per-customer). Integrity is preserved;
+        // the loser is told to retry. The DB message is not leaked (it may contain SQL/identifiers).
+        return problem(HttpStatus.CONFLICT, "Concurrent modification",
+                "The resource was modified concurrently; please retry the request.",
+                "concurrent-modification");
     }
 
     // ---- 422 Unprocessable Entity (business validation) ----------------------------------------

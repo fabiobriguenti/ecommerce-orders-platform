@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-This is a **greenfield project**. The only file present is `desafio.md` — the full challenge specification (in Portuguese). No code, build files, or tooling exist yet. `desafio.md` is the authoritative source of requirements; read it before making design decisions, and treat its **Regras de Negócio** (business rules) section as the primary acceptance criteria.
+`order-service` is **implemented and green**: build, unit/slice/integration/acceptance tests, the JaCoCo (≥80%) and Pitest (≥75% MSI) gates, the GitHub Actions pipeline, and the Docker Compose stack all pass. `desafio.md` remains the authoritative source of requirements (in Portuguese) — treat its **Regras de Negócio** (business rules) section as the primary acceptance criteria, and the **Non-negotiable constraints** below as the cross-cutting checklist to verify any change against.
 
 Deadline: **2026-06-19**. Delivery is a public GitHub repo.
 
@@ -14,23 +14,28 @@ The backend for an e-commerce order platform, decomposed into microservices — 
 
 Identifying which microservices exist and their responsibilities is part of the challenge and must be documented in `docs/architecture.md` (bounded contexts, API/event contracts, design trade-offs). The WireMock mappings are evidence of that domain analysis.
 
-## Expected repository layout
+## Repository layout
 
 ```
 docs/architecture.md        # domain decomposition, bounded contexts, ADRs
 order-service/              # the only real service; src/ + Dockerfile
 wiremock/mappings/          # JSON stub mappings for simulated services
-wiremock/__files/           # response bodies (if needed)
 docker-compose.yml          # all services + DB + observability + WireMock
-README.md                   # local run instructions (docker-compose up)
-.github/workflows/ci.yml    # build → unit → integration → vuln scan (Trivy)
+README.md                   # local run instructions (docker compose up)
+.github/workflows/ci.yml    # build → unit → integration → mutation → vuln scan (Trivy)
 ```
 
 ## Stack
 
-Reference stack is **Java 21+ / Spring Boot** (Kotlin, Python, or Go are permitted alternatives — see the table in `desafio.md`). Whatever the language, these are mandatory: Clean/Hexagonal Architecture, DDD, idempotency, observability, security. If a build tool is chosen, record its build/test/run commands here.
+Implemented in **Java 25 / Spring Boot 3.5 (WebFlux, reactive)**, **R2DBC + PostgreSQL**, **Flyway** migrations (run over JDBC), built with **Maven** via the wrapper (no local Maven needed). Testcontainers **2.x** drives the `*IT` suite. (The spec also permits Kotlin/Python/Go — see the table in `desafio.md`.) Mandatory and in place: Clean/Hexagonal Architecture, DDD, idempotency, observability, security.
 
-`order-service` must use **Clean Architecture / Hexagonal** with strict layering:
+Build/test/run — from `order-service/` (use `.\mvnw.cmd` on Windows; native commands need `JAVA_HOME` on JDK 25):
+- `./mvnw test` — unit + web-slice tests + JaCoCo coverage gate. **No Docker.**
+- `./mvnw verify` — the above plus the Testcontainers integration + acceptance `*IT` (Postgres + WireMock). **Needs Docker** (any modern engine; Testcontainers 2.x negotiates current Docker APIs).
+- `./mvnw org.pitest:pitest-maven:mutationCoverage` — domain mutation gate (Pitest).
+- `docker compose up --build` — from the repo root; full stack (app + Postgres + WireMock + observability).
+
+`order-service` uses **Clean Architecture / Hexagonal** with strict layering:
 - **Domain** — entities, value objects, business rules, ports
 - **Application** — use cases
 - **Infrastructure** — adapters: HTTP in, persistence, HTTP clients to external services

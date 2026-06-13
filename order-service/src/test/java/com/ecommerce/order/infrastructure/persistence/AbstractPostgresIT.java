@@ -1,35 +1,23 @@
 package com.ecommerce.order.infrastructure.persistence;
 
-import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
+
+import com.ecommerce.order.support.TestContainers;
 
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionFactory;
 import io.r2dbc.spi.ConnectionFactory;
 
 /**
- * Shared singleton Postgres container for the persistence integration tests. The container starts
- * once per JVM; Flyway migrations are applied against it (JDBC), and each test gets a fresh
- * {@link R2dbcEntityTemplate} with truncated tables.
+ * Persistence slice tests talk straight to R2DBC (no Spring context) against the shared singleton
+ * Postgres in {@link TestContainers} (started once per JVM, migrated with Flyway). Each test gets a
+ * fresh {@link R2dbcEntityTemplate} with truncated tables.
  */
 public abstract class AbstractPostgresIT {
 
-    protected static final PostgreSQLContainer<?> POSTGRES;
-
-    static {
-        POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine")
-                .withDatabaseName("orders")
-                .withUsername("orders")
-                .withPassword("orders");
-        POSTGRES.start();
-        Flyway.configure()
-                .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
-                .locations("classpath:db/migration")
-                .load()
-                .migrate();
-    }
+    protected static final PostgreSQLContainer<?> POSTGRES = TestContainers.POSTGRES;
 
     protected R2dbcEntityTemplate template;
 

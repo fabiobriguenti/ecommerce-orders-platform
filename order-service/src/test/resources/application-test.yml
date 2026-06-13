@@ -1,0 +1,46 @@
+# Profile used by the full-context acceptance tests (AbstractIntegrationTest). The DB and external
+# base-url are injected from the shared Testcontainers via @DynamicPropertySource; everything here
+# makes the wired stack deterministic and quiet for tests.
+spring:
+  flyway:
+    baseline-on-migrate: true
+  test:
+    webtestclient:
+      # The server-bound WebTestClient (RANDOM_PORT) blocks per call; give slow paths headroom.
+      timeout: 30s
+
+app:
+  security:
+    dev-token:
+      # Acceptance tests mint real JWTs through /api/v1/auth/token.
+      enabled: true
+  rate-limit:
+    # Disabled so bursty tests (ConcurrencyIT, CircuitBreakerIT) are not throttled.
+    enabled: false
+
+outbox:
+  # Push the poller far out of the test window: the acceptance tests assert on order/payment state,
+  # not on notification delivery, and this avoids background traffic to the Notification mock.
+  poll-interval-ms: 3600000
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      paymentGateway:
+        # Trip after just two failing calls so CircuitBreakerIT is fast and deterministic.
+        sliding-window-size: 2
+        minimum-number-of-calls: 2
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 60s
+        permitted-number-of-calls-in-half-open-state: 1
+  timelimiter:
+    instances:
+      paymentGateway:
+        timeout-duration: 3s
+
+management:
+  otlp:
+    tracing:
+      # No collector in tests; don't spam connection-refused warnings.
+      export:
+        enabled: false

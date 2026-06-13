@@ -70,17 +70,29 @@ Docker e rodam de forma autocontida.**
 | Cobertura de linha (domínio) | JaCoCo (`check`) | **80%** | `./mvnw test` |
 | Mutation score (domínio) | Pitest | **75%** (MSI atual ~81%) | `mutationCoverage` |
 
-### Testes de integração (`*IT`) — rodam no CI
+### Testes de integração (`*IT`)
 
-Os `*IT` exercitam os adaptadores contra **Postgres real e WireMock real** via **Testcontainers**,
-reutilizando os mesmos `wiremock/mappings/`. O lar deles é o **pipeline de CI (Linux)**, onde
-`./mvnw verify` executa a suíte completa (veja [CI/CD](#cicd)).
+Todos os `*IT` rodam no `verify` (Failsafe) via **Testcontainers**, reutilizando os mesmos
+`wiremock/mappings/`. São duas camadas:
 
-> Não estão no fluxo local padrão de propósito: o Testcontainers precisa de um daemon Docker que o
-> seu cliente consiga acessar, e alguns Docker Desktop no Windows expõem a API por *named pipe* de um
-> jeito que o cliente (docker-java) não negocia (`/info` → HTTP 400), fazendo a detecção do ambiente
-> falhar. Em Docker compatível (CI Linux, WSL2, Colima/Rancher Desktop, ou daemon TCP), `./mvnw verify`
-> roda tudo, incluindo os `*IT`, sem nenhuma alteração no projeto.
+- **Slices de adaptador** (`infrastructure/**/*IT`) — persistência contra **Postgres real** e os HTTP
+  clients contra **WireMock real**, cada camada isolada e rápida.
+- **Aceitação ponta a ponta** (`acceptance/*IT`) — `@SpringBootTest` em porta aleatória exercitando o
+  *stack* inteiro (HTTP → segurança JWT → use cases → R2DBC/Postgres → gateway/catálogo no WireMock):
+  ciclo de vida do pedido e congelamento de preço na confirmação, idempotência (`Idempotency-Key`),
+  auto-cancelamento após 3 rejeições, *circuit breaker* no gateway 503, "um pedido ativo por cliente",
+  concorrência (*optimistic locking* → 409) e autorização por *scope*.
+
+Os dois contêineres são **singletons compartilhados** (`support/TestContainers`): um único Postgres e
+um único WireMock por execução, e — graças ao *cache* de contexto do Spring — um único
+`ApplicationContext` para toda a suíte de aceitação. Para iteração local mais rápida, os contêineres
+têm `withReuse(true)`: habilite o reuso entre execuções com
+`echo testcontainers.reuse.enable=true >> ~/.testcontainers.properties` (opt-in por máquina; é inócuo
+em CI, onde o arquivo não existe).
+
+Para rodar tudo localmente basta **Docker instalado** e `cd order-service && ./mvnw verify` — o mesmo
+comando do CI. O Testcontainers 2.x (com docker-java 3.7) negocia a API de engines atuais (MinAPI ≥
+1.40, ex.: Docker 29), então não há passo extra dependente de ambiente.
 
 ## API
 
@@ -167,7 +179,7 @@ GitHub Actions (`.github/workflows/ci.yml`) em cada push/PR para `main`:
 
 ```
 order-service/            # serviço (Clean Architecture: domain / application / infrastructure)
-wiremock/mappings/        # stubs dos serviços externos (a partir da Fase 5)
+wiremock/mappings/        # stubs dos serviços externos (Customer, Catalog, Payment, Notification)
 observability/            # prometheus.yml + provisioning do Grafana
 docker-compose.yml        # orquestração local (app + DB + WireMock + observabilidade)
 .github/workflows/ci.yml  # pipeline: build/test/cobertura/mutation + scan Trivy

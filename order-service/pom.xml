@@ -23,7 +23,7 @@
         <!-- Security patch over Spring Boot 3.5.3's managed 6.5.1: fixes CVE-2026-22732
              (CRITICAL: security-policy bypass / information disclosure). Flagged by the CI Trivy gate. -->
         <spring-security.version>6.5.9</spring-security.version>
-        <testcontainers.version>1.21.3</testcontainers.version>
+        <testcontainers.version>2.0.5</testcontainers.version>
         <resilience4j.version>2.2.0</resilience4j.version>
         <springdoc.version>2.8.8</springdoc.version>
         <jacoco.version>0.8.13</jacoco.version>
@@ -136,20 +136,24 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Testcontainers declared for later phases (DB + WireMock integration) -->
+        <!-- Testcontainers (DB + WireMock integration). 2.x renamed the modules with the
+             'testcontainers-' artifact prefix and ships docker-java 3.7.x, which negotiates a current
+             Docker Engine API (MinAPI >= 1.40, e.g. Docker 29) instead of being rejected with HTTP 400
+             like the 3.4.x bundled by Testcontainers 1.21. So `verify` runs natively on any modern
+             host engine. -->
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>postgresql</artifactId>
+            <artifactId>testcontainers-postgresql</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>r2dbc</artifactId>
+            <artifactId>testcontainers-r2dbc</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

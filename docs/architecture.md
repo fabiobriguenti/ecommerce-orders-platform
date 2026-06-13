@@ -128,7 +128,7 @@ to a transactional **outbox** and delivered to Notification asynchronously by `O
 | ADR | **WebFlux + R2DBC** | Non-blocking I/O for an HTTP-call-heavy service. *Trade-off:* reactive code is harder to read/debug than blocking JDBC. |
 | ADR-06 | **Flyway** migrations | Versioned, reproducible schema. *Trade-off:* runs over JDBC, separate from the R2DBC runtime. |
 | ADR-04 | **Transactional Outbox** | Atomic state change + reliable event delivery without a broker. *Trade-off:* polling latency and at-least-once (consumers must be idempotent). |
-| ADR-05 | **Optimistic locking** (`@Version`) | Concurrent requests on the same order; low contention expected. *Chosen over pessimistic locking* to avoid holding DB locks; conflicting writes fail fast and are retried by the client. A DB partial unique index additionally guarantees one active order per customer under races. |
+| ADR-05 | **Optimistic locking** (`@Version`) | Concurrent requests on the same order; low contention expected. *Chosen over pessimistic locking* to avoid holding DB locks; a conflicting write fails fast and surfaces as RFC 7807 **409 Conflict** (`ProblemDetailExceptionHandler` maps `OptimisticLockingFailureException`/`DataIntegrityViolationException`) for the client to retry. A DB partial unique index additionally guarantees one active order per customer under races. |
 | — | **Idempotency** | Confirm/payment safety + retried POST/DELETE. Two layers: aggregate no-ops and an `Idempotency-Key` filter storing the first response. *Trade-off:* stored responses add a write per mutating call. |
 | ADR-09/10 | **Separate Payment aggregate + explicit Order state machine** | Keep payment-attempt logic out of the order; make transitions auditable. *Trade-off:* two aggregates kept consistent in one transaction. |
 | ADR-14 | **Circuit breaker + timeout** (Resilience4j) on the gateway | An unstable gateway (503) must not cascade. *Trade-off:* fails fast (`503`) instead of waiting, surfacing transient outages to the client. |
@@ -161,7 +161,8 @@ to a transactional **outbox** and delivered to Notification asynchronously by `O
 |---|---|---|
 | Unit | Domain + application use cases | JUnit 5, Mockito, Reactor Test |
 | Web slice | Controllers + security + RFC 7807 (no Docker) | `@WebFluxTest`, `WebTestClient`, spring-security-test |
-| Integration | Repositories vs **real Postgres**; HTTP clients vs **WireMock** (reusing `wiremock/mappings/`) | Testcontainers (`*IT`, Failsafe) |
+| Integration (slice) | Repositories vs **real Postgres**; HTTP clients vs **WireMock** (reusing `wiremock/mappings/`) | Testcontainers (`infrastructure/**/*IT`, Failsafe) |
+| Acceptance (E2E) | Full stack on a random port: HTTP → JWT → use cases → R2DBC/Postgres + WireMock (lifecycle & price-freeze, idempotency, 3-rejection auto-cancel, circuit breaker, one-active-order, optimistic-lock → 409, scopes) | `@SpringBootTest`, `WebTestClient`, shared Testcontainers singletons (`acceptance/*IT`) |
 | Coverage gate | Domain line coverage ≥ 80% | JaCoCo `check` |
 | Mutation gate | Domain MSI ≥ 75% (currently ~81%) | Pitest |
 

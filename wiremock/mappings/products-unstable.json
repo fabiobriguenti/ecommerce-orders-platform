@@ -1,0 +1,16 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/products/prod-unstable"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "id": "prod-unstable",
+      "available": true,
+      "price": { "amount": 99.99, "currency": "BRL" }
+    }
+  }
+}
