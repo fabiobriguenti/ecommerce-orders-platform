@@ -30,6 +30,9 @@
         <jacoco.version>0.8.15</jacoco.version>
         <pitest.version>1.25.4</pitest.version>
         <pitest-junit5.version>1.2.3</pitest-junit5.version>
+        <!-- ArchUnit: enforces Clean Architecture layering as an executable test. 1.4.x bundles an
+             ASM that reads Java 25 (class file v69) bytecode. -->
+        <archunit.version>1.4.1</archunit.version>
         <!-- Quality gates (graded): domain line coverage and mutation score. -->
         <domain.coverage.min>0.80</domain.coverage.min>
         <domain.mutation.min>75</domain.mutation.min>
@@ -154,6 +157,15 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-r2dbc</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- ArchUnit: guards the Clean Architecture layering (domain <- application <- infrastructure)
+             as a fast unit test, so a future PR can't silently leak a framework/adapter import into the
+             domain with the build still green. -->
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <version>${archunit.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

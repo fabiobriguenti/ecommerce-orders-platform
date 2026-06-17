@@ -65,6 +65,13 @@ Outbound ports (`CustomerPort`, `CatalogPort`, `PaymentGatewayPort`, `Notificati
 domain and implemented by infrastructure adapters, keeping business rules isolated from frameworks
 and from the simulated services.
 
+The inward dependency rule is enforced automatically by **ArchUnit** (`CleanArchitectureTest`): the
+layered rule (`domain ← application ← infrastructure`) and a check that the domain is free of web,
+persistence and serialization frameworks fail the build if violated. It runs as a fast unit test in
+the Surefire phase (no Docker), so it gates every `./mvnw test`. One deliberate exception is encoded:
+the domain *is* allowed to depend on Project Reactor (`Mono`/`Flux`), because the outbound ports are
+reactive by design for the WebFlux stack — the rule therefore bans frameworks but whitelists Reactor.
+
 # Domain Model
 
 **Order** (aggregate root) — id, customerId, status, items, frozen total, optimistic `version`.
@@ -160,6 +167,7 @@ to a transactional **outbox** and delivered to Notification asynchronously by `O
 | Level | What | Tooling |
 |---|---|---|
 | Unit | Domain + application use cases | JUnit 5, Mockito, Reactor Test |
+| Architecture | Clean Architecture layering + framework-free domain (no Docker) | ArchUnit (`architecture/CleanArchitectureTest`, Surefire) |
 | Web slice | Controllers + security + RFC 7807 (no Docker) | `@WebFluxTest`, `WebTestClient`, spring-security-test |
 | Integration (slice) | Repositories vs **real Postgres**; HTTP clients vs **WireMock** (reusing `wiremock/mappings/`) | Testcontainers (`infrastructure/**/*IT`, Failsafe) |
 | Acceptance (E2E) | Full stack on a random port: HTTP → JWT → use cases → R2DBC/Postgres + WireMock (lifecycle & price-freeze, idempotency, 3-rejection auto-cancel, circuit breaker, one-active-order, optimistic-lock → 409, scopes) | `@SpringBootTest`, `WebTestClient`, shared Testcontainers singletons (`acceptance/*IT`) |

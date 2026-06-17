@@ -9,13 +9,13 @@ em [`docs/architecture.md`](docs/architecture.md).
 
 - Java 25 + Spring Boot 3.5 (WebFlux, reativo)
 - R2DBC + PostgreSQL, migrations com Flyway (via JDBC)
-- Maven (via Maven Wrapper — **não precisa de Maven instalado**)
+- Maven (via Maven Wrapper)
 
 ## Pré-requisitos
 
 - **Docker + Docker Compose** — única dependência para subir e exercitar a aplicação completa.
-- **JDK 25** — apenas se for buildar/testar localmente fora do Docker (`JAVA_HOME`
-  apontando para ele). O Maven vem pelo wrapper, não precisa instalar.
+- **JDK 25** — apenas para build/teste local fora do Docker (`JAVA_HOME`
+  apontando para ele).
 
 ## Como rodar
 
@@ -156,7 +156,7 @@ Outros controles (OWASP): validação de input (Bean Validation), **rate limitin
 |----|-----|
 | Jaeger (traces)     | http://localhost:16686 |
 | Prometheus (métricas) | http://localhost:9090 |
-| Grafana             | http://localhost:3000 (login anônimo; datasources + dashboards provisionados) |
+| Grafana             | http://localhost:3000 (login anônimo; datasources + dashboards) |
 
 Sampling de trace: `TRACING_SAMPLING` (1.0 por padrão). Endpoint OTLP: `MANAGEMENT_OTLP_TRACING_ENDPOINT`.
 
@@ -187,9 +187,6 @@ GitHub Actions (`.github/workflows/ci.yml`) em cada push/PR para `main`:
 2. **security-scan** — build da imagem Docker e **scan de vulnerabilidades com Trivy**: findings
    HIGH/CRITICAL vão para a aba *Security* (SARIF) e o build **falha em CRITICAL** *fixable*
    (`ignore-unfixed`).
-
-> O gate Trivy já pegou um caso real: `CVE-2026-22732` (CRITICAL) em `spring-security-web` 6.5.1 —
-> corrigido fixando a versão do Spring Security em 6.5.9 no `pom.xml`.
 
 ## Estrutura
 
